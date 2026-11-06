@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>光下绿洲 · 光伏板下的 AI 节水管家</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='11' r='5' fill='%23f2b04b'/%3E%3Cpath d='M4 22l12-4.5 12 4.5M4 27l12-4.5 12 4.5' stroke='%2345c8d6' stroke-width='2' fill='none'/%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="14" r="5.4" fill="#f2b04b"/>
+          <g stroke="#f2b04b" stroke-width="1.6" stroke-linecap="round" opacity="0.85">
+            <line x1="20" y1="3.4" x2="20" y2="6.2"/>
+            <line x1="20" y1="21.8" x2="20" y2="23.4"/>
+            <line x1="9.4" y1="14" x2="12" y2="14"/>
+            <line x1="28" y1="14" x2="30.6" y2="14"/>
+          </g>
+          <path d="M6 28.5 L20 23 L34 28.5" stroke="#45c8d6" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M6 34 L20 28.5 L34 34" stroke="#45c8d6" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.55"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>光下绿洲 <small>GUANGXIA OASIS</small></h1>
+        <p>光伏板下的 AI 节水管家</p>
+      </div>
+    </div>
+
+    <div class="site-chip">
+      <span class="pulse"></span>
+      <div class="site-chip-text">
+        <strong>武威 · 凉州基地</strong>
+        <em>1 万亩 · 板下板间分区管理</em>
+      </div>
+    </div>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="overview">总览</button>
+      <button class="tab" data-tab="demand">需水账</button>
+      <button class="tab" data-tab="health">健康体检</button>
+      <button class="tab" data-tab="prescription">处方灌溉</button>
+      <button class="tab" data-tab="accounting">节水核算</button>
+      <button class="tab" data-tab="system">设备与系统</button>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="source-switch" id="sourceSwitch">
+        <button class="src-btn active" data-src="sim" title="内置仿真数据">模拟</button>
+        <button class="src-btn" data-src="http" title="HTTP API 接入">API</button>
+        <button class="src-btn" data-src="file" title="本地文件导入">文件</button>
+      </div>
+      <div class="clock">
+        <span id="scenarioTime">2027-06-15 08:30</span>
+        <em>场景时间 · 生长季</em>
+      </div>
+      <div class="status-pill" id="edgeStatus"><i></i>边缘盒子在线</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ================= 总览 ================= -->
+    <section class="page active" id="page-overview">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">WATER INTELLIGENCE OVERVIEW</p>
+          <h2>今日水情总览</h2>
+          <p class="sub">气象、墒情、无人机巡检与配额约束在一屏内对齐；数字来自实时计算，不是静态看板。</p>
+        </div>
+        <div class="head-meta">
+          <span id="weatherBrief">31.4 / 15.2 ℃ · 风速 3.1 m/s · 辐射 26.8 MJ/m²</span>
+        </div>
+      </div>
+
+      <div class="kpi-row" id="kpiRow"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">WATER BUDGET · 7 DAYS</p><h3>未来 7 天需水与配额</h3></div>
+            <div class="legend">
+              <span><i style="background:var(--cyan)"></i>蒸散需水</span>
+              <span><i style="background:var(--amber)"></i>日均可分配配额</span>
+            </div>
+          </div>
+          <canvas id="forecastChart" class="chart" height="260"></canvas>
+          <p class="footnote" id="forecastNote"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">PARTITION MOISTURE</p><h3>分区墒情与剩余支撑天数</h3></div>
+            <button class="ghost-btn" data-goto="demand">查看需水账</button>
+          </div>
+          <div class="partition-list" id="overviewPartitions"></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">ALERTS</p><h3>需要今天处理的事</h3></div></div>
+          <div class="alert-list" id="alertList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">DRONE INSPECTION</p><h3>最近一次巡检</h3></div><span class="badge">已完成</span></div>
+          <div class="inspect-summary" id="inspectSummary"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">EDGE STATUS</p><h3>边缘盒子与链路</h3></div></div>
+          <div class="edge-summary" id="edgeSummary"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 需水账 ================= -->
+    <section class="page" id="page-demand">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">WATER DEMAND LEDGER</p>
+          <h2>每块地今天缺多少水</h2>
+          <p class="sub">ET₀ 由 Penman-Monteith 现场计算，乘以板下/板间分区系数与实际覆盖度，再按墒情校正。</p>
+        </div>
+        <div class="head-meta">参考蒸散量口径：FAO-56 日尺度</div>
+      </div>
+
+      <div class="grid-2 wide-left">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">ON-SITE WEATHER</p><h3>基地气象站参数</h3></div>
+            <span class="badge soft">拖动可实时重算 ET₀</span>
+          </div>
+          <div class="weather-controls">
+            <div class="wx-control">
+              <label>最高气温 <b id="v-tmax">31.4</b> ℃</label>
+              <input type="range" id="wx-tmax" min="18" max="42" step="0.1" value="31.4"/>
+            </div>
+            <div class="wx-control">
+              <label>最低气温 <b id="v-tmin">15.2</b> ℃</label>
+              <input type="range" id="wx-tmin" min="2" max="26" step="0.1" value="15.2"/>
+            </div>
+            <div class="wx-control">
+              <label>平均相对湿度 <b id="v-rh">32</b> %</label>
+              <input type="range" id="wx-rh" min="10" max="80" step="1" value="32"/>
+            </div>
+            <div class="wx-control">
+              <label>2 m 风速 <b id="v-wind">3.1</b> m/s</label>
+              <input type="range" id="wx-wind" min="0.5" max="9" step="0.1" value="3.1"/>
+            </div>
+            <div class="wx-control">
+              <label>太阳辐射 <b id="v-rs">26.8</b> MJ/m²</label>
+              <input type="range" id="wx-rs" min="8" max="33" step="0.1" value="26.8"/>
+            </div>
+          </div>
+          <div class="et0-readout">
+            <div class="et0-main">
+              <p>今日参考蒸散量 ET₀</p>
+              <strong id="et0Value">7.62</strong>
+              <span>mm / day</span>
+            </div>
+            <div class="et0-terms" id="et0Terms"></div>
+          </div>
+          <p class="footnote">板下系数与板间系数分开标定：遮阴率 <b id="shadeVal">38%</b>、板高 1.6 m、行距 6 m。同一基地内板下与板间日蒸散差异可达 30% 以上。</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">DEMAND BY PARTITION</p><h3>分区需水台账</h3></div>
+            <span class="badge soft" id="demandTotalBadge"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="demandTable"></table>
+          </div>
+          <p class="footnote">需水量 = 日蒸散（含覆盖度折算）× 面积；含水率低于胁迫线时给出恢复修正。数值随上方气象参数联动。</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">SOIL MOISTURE FORECAST</p><h3>7 天墒情预测</h3></div>
+            <select class="select" id="forecastPartition"></select>
+          </div>
+          <canvas id="moistureChart" class="chart" height="250"></canvas>
+          <p class="footnote" id="moistureNote"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">WATER BALANCE</p><h3>分区水量平衡明细</h3></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table compact" id="balanceTable"></table>
+          </div>
+          <p class="footnote">Δθ =（有效降水 + 灌溉 − 蒸散）/ 根层深度；未计入深层渗漏与地下水补给。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 健康体检 ================= -->
+    <section class="page" id="page-health">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">VEGETATION HEALTH</p>
+          <h2>哪片苗先撑不住</h2>
+          <p class="sub">多光谱指数与热红外冠气温差融合，识别缺水、死亡与病虫害斑块，并自动落到灌溉分区。</p>
+        </div>
+        <div class="head-meta" id="healthFlightMeta"></div>
+      </div>
+
+      <div class="grid-2 wide-left">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">INSPECTION MAP · 1 万亩</p><h3>植被健康栅格图</h3></div>
+            <div class="layer-tabs" id="layerTabs">
+              <button class="chip active" data-layer="ndvi">NDVI</button>
+              <button class="chip" data-layer="ndre">NDRE</button>
+              <button class="chip" data-layer="cwsi">CWSI</button>
+              <button class="chip" data-layer="death">死亡斑块</button>
+            </div>
+          </div>
+          <div class="health-canvas-wrap">
+            <canvas id="healthCanvas" width="980" height="470"></canvas>
+            <div class="map-tooltip" id="mapTooltip"></div>
+          </div>
+          <div class="map-footer">
+            <div class="scale-legend" id="scaleLegend"></div>
+            <p class="footnote" id="healthHint">鼠标移到栅格上可查看该点位指数与关联分区。</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">STRESS PATCHES</p><h3>异常斑块清单</h3></div><span class="badge" id="patchCountBadge"></span></div>
+          <div class="table-wrap">
+            <table class="data-table compact" id="patchTable"></table>
+          </div>
+          <div class="health-stats" id="healthStats"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 处方灌溉 ================= -->
+    <section class="page" id="page-prescription">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">PRESCRIPTION IRRIGATION</p>
+          <h2>先浇哪块、浇多久</h2>
+          <p class="sub">配额是硬约束，胁迫程度是优先级。输出可直接下发的“分区—阀号—时长—时段”，并保留人工确认。</p>
+        </div>
+        <div class="head-meta" id="prescriptionModeMeta">当前模式：建议 + 人工确认</div>
+      </div>
+
+      <div class="quota-banner" id="quotaBanner"></div>
+
+      <div class="grid-2 wide-left">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">PRESCRIPTION TABLE</p><h3>灌溉处方</h3></div>
+            <div class="actions">
+              <button class="primary-btn" id="generateBtn">生成处方</button>
+              <button class="ghost-btn" id="exportPrescBtn">导出 CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="prescTable"></table>
+          </div>
+          <div class="presc-summary" id="prescSummary"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">EXECUTION</p><h3>下发与执行</h3></div>
+            <label class="switch">
+              <input type="checkbox" id="autoDispatch"/>
+              <span class="track"></span>
+              <span class="switch-label">自动下发（需基地书面授权）</span>
+            </label>
+          </div>
+          <div class="exec-panel" id="execPanel"></div>
+          <div class="exec-actions">
+            <button class="primary-btn" id="dispatchBtn" disabled>确认下发</button>
+            <span class="exec-hint">默认人工确认；自动下发需基地书面授权</span>
+          </div>
+          <div class="progress-line"><div class="progress-fill" id="execProgress"></div></div>
+          <p class="footnote" id="execNote">未生成处方时，执行区保持待命。</p>
+          <div class="card-head sub-head"><div><p class="card-label">BASIS CHAIN</p><h3>处方依据链</h3></div></div>
+          <div class="basis-panel" id="basisPanel"><p class="empty">选择处方表中的一行，查看这条处方为什么这样开。</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><p class="card-label">AUDIT LOG</p><h3>执行日志</h3></div><span class="badge soft">全程留痕</span></div>
+        <div class="log-list" id="execLog"></div>
+      </div>
+    </section>
+
+    <!-- ================= 节水核算 ================= -->
+    <section class="page" id="page-accounting">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">WATER ACCOUNTING</p>
+          <h2>节水多少、增产多少，算得清</h2>
+          <p class="sub">同一基地、同一季节、两种做法；对照区按原方式灌溉，节水率与增产率都是差值，不是跨年比天气。</p>
+        </div>
+        <div class="head-meta">核算周期：2027-04-01 至 2027-06-15</div>
+      </div>
+
+      <div class="kpi-row six" id="accountKpi"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">WEEKLY COMPARISON</p><h3>基准用水与处方用水</h3></div>
+            <div class="legend">
+              <span><i style="background:#3d5054"></i>定时定量基准</span>
+              <span><i style="background:var(--cyan)"></i>处方灌溉</span>
+            </div>
+          </div>
+          <canvas id="accountChart" class="chart" height="270"></canvas>
+          <p class="footnote" id="accountNote"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><p class="card-label">MONTHLY LEDGER</p><h3>分旬水账</h3></div>
+            <button class="ghost-btn" id="exportLedgerBtn">导出台账</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table compact" id="ledgerTable"></table>
+          </div>
+          <p class="footnote">节水量按分区流量计计量；对照区保留原定时定量方式，用于归因。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 设备与系统 ================= -->
+    <section class="page" id="page-system">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">INFRASTRUCTURE</p>
+          <h2>设备在线率与断网韧性</h2>
+          <p class="sub">不改控制器、不碰发电侧；只做决策层，通过边缘盒子与基地现有水肥一体化设备对接。</p>
+        </div>
+        <div class="head-meta" id="systemMeta"></div>
+      </div>
+
+      <div class="device-grid" id="deviceGrid"></div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">EDGE BOX</p><h3>边缘端运行状态</h3></div></div>
+          <div class="edge-detail" id="edgeDetail"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">OFFLINE NODES</p><h3>离线节点</h3></div></div>
+          <div class="table-wrap">
+            <table class="data-table compact" id="offlineTable"></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><p class="card-label">INTEGRATION</p><h3>接口对接状态</h3></div></div>
+          <div class="integration-list" id="integrationList"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>光下绿洲 · 光伏板下的 AI 节水管家</span>
+    <span>第五届甘肃省青年生态文明创新创业大赛 · 绿色创新赛道</span>
+    <span>演示系统：内置仿真数据，算法为真实计算口径</span>
+  </footer>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/adapter.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
