@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e7a4f">
+<title>光下绿洲 · 移动工作站</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230e7a4f'/></svg>">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-title">
+      <strong>光下绿洲</strong>
+      <span>凉州光伏治沙基地 · 1 万亩</span>
+    </div>
+    <button class="pill" id="srcPill" title="点击切换数据源">…</button>
+  </header>
+
+  <main id="main">
+    <!-- 总览 -->
+    <section class="tab active" id="tab-home">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card">
+        <div class="card-title">实时预警</div>
+        <div id="alertList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">分区墒情速览</div>
+        <div id="quickList"></div>
+      </div>
+    </section>
+
+    <!-- 墒情 -->
+    <section class="tab" id="tab-soil">
+      <div class="hint" id="soilHint"></div>
+      <div id="soilList"></div>
+    </section>
+
+    <!-- 需水 -->
+    <section class="tab" id="tab-water">
+      <div class="card et0-card">
+        <div class="card-title">今日参考蒸散 ET₀（FAO-56）</div>
+        <div class="et0-main"><b id="et0Value">-</b><span> mm/日</span></div>
+        <div class="et0-terms" id="et0Terms"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">7 日需水预报 <small id="quotaLine"></small></div>
+        <div id="fcBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">分区日需水</div>
+        <div id="demandList"></div>
+      </div>
+    </section>
+
+    <!-- 处方 -->
+    <section class="tab" id="tab-rx">
+      <button class="gen-btn" id="genBtn">生成今日灌溉处方</button>
+      <div id="rxSummary"></div>
+      <div id="rxList"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="home">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>
+      <span>总览</span>
+    </button>
+    <button class="tab-btn" data-tab="soil">
+      <svg viewBox="0 0 24 24"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>
+      <span>墒情</span>
+    </button>
+    <button class="tab-btn" data-tab="water">
+      <svg viewBox="0 0 24 24"><path d="M4 16h13a3 3 0 1 0-3-3M3 10h9a2.5 2.5 0 1 0-2.5-2.5M5 21h10"/></svg>
+      <span>需水</span>
+    </button>
+    <button class="tab-btn" data-tab="rx">
+      <svg viewBox="0 0 24 24"><path d="M9 3h6v3h4v15H5V6h4z M9 12h6M9 16h4"/></svg>
+      <span>处方</span>
+    </button>
+  </nav>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/engine.js"></script>
+  <script src="../js/adapter.js"></script>
+  <script src="mobile.js"></script>
+</body>
+</html>
